@@ -1,0 +1,66 @@
+name: CI-CD-EC2-Pipeline
+env:
+  AWS_REGION_NAME             : "us-east-2"
+  AWS_S3_BUCKET               : "user-apps"
+  SPRING_BOOT_JAR_PATH        : "awsspringboot/target/*.jar"
+  LAMBDA_HANDLER_JAR_PATH     : "awslambda/target/*.jar"
+  NEW_SPRING_BOOT_APP_NAME    : "aws-spring-boot-${GITHUB_SHA::8}.jar"
+  NEW_LAMBDA_HANDLER_APP_NAME : "aws-lambda-${GITHUB_SHA::8}.jar"
+  DYNAMO_DB_ENDPOINT          : "dynamodb.us-east-2.amazonaws.com"
+  SQS_ENDPOINT                : "sqs.us-east-2.amazonaws.com"
+  SQS_BOOK_ENDPOINT           : "256935796161/book-sqs.fifo"
+  SQS_BOOK_GROUP              : "book-sqs"
+
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Clone repo
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+
+      - name: Maven Package
+        run: mvn -B clean package -DskipTests
+
+      - name: Configure my AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id    :  ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key:  ${{ secrets.AWS_SECRET_KEY }}
+          aws-region           :  ${{ env.AWS_REGION_NAME }}
+
+      - name: Copy Spring Boot jar to S3
+        run:  aws s3 cp ${{ env.SPRING_BOOT_JAR_PATH }} s3://${{ env.AWS_S3_BUCKET }}/${{ env.NEW_SPRING_BOOT_APP_NAME }}
+
+      - name: Copy Lambda Handler jar to S3
+        run:  aws s3 cp ${{ env.LAMBDA_HANDLER_JAR_PATH }} s3://${{ env.AWS_S3_BUCKET }}/${{ env.NEW_LAMBDA_HANDLER_APP_NAME }}
+  cd:
+    runs-on: ubuntu-latest
+    needs: [ci]
+    steps:
+
+      - name: Configure my AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id    :  ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key:  ${{ secrets.AWS_SECRET_KEY }}
+          aws-region           :  ${{ env.AWS_REGION_NAME }}
+
+      - name: Create Cloudformation stack
+        run : |
+          aws cloudformation create-stack \
+          --stack-name AWSBookDemo \
+          --parameters ParameterKey=SpringBootAppName,ParameterValue=${{ env.NEW_SPRING_BOOT_APP_NAME }} ParameterKey=LambdaHandlerAppName,ParameterValue=${{ env.NEW_LAMBDA_HANDLER_APP_NAME }} ParameterKey=AccessKey,ParameterValue=${{ secrets.AWS_ACCESS_KEY }} ParameterKey=SecretKey,ParameterValue=${{ secrets.AWS_SECRET_KEY }} ParameterKey=Region,ParameterValue=${{ env.AWS_REGION_NAME }} ParameterKey=DynamoDbEndpoint,ParameterValue=${{ env.DYNAMO_DB_ENDPOINT }} ParameterKey=SqsEndpoint,ParameterValue=${{ env.SQS_ENDPOINT }} ParameterKey=SqsBookEndpoint,ParameterValue=${{ env.SQS_BOOK_ENDPOINT }} ParameterKey=SqsBookGroup,ParameterValue=${{ env.SQS_BOOK_GROUP }} \
+          --template-url https://s3.amazonaws.com/user-apps/book.template \
+          --capabilities CAPABILITY_IAM
