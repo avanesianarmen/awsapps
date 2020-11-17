@@ -1,0 +1,219 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "SpringBootAppName": {
+      "Type": "String"
+    },
+    "LambdaHandlerAppName": {
+      "Type": "String"
+    },
+    "AccessKey": {
+      "Type": "String"
+    },
+    "SecretKey": {
+      "Type": "String"
+    },
+    "Region": {
+      "Type": "String"
+    },
+    "DynamoDbEndpoint": {
+      "Type": "String"
+    },
+    "SqsEndpoint": {
+      "Type": "String"
+    },
+    "SqsBookEndpoint": {
+      "Type": "String"
+    },
+    "SqsBookGroup": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "RootInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          "EC2ToS3ReadOnlyRole"
+        ]
+      }
+    },
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow http to client host",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 8080,
+            "ToPort": 8080,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "Ec2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-03657b56516ab7912",
+        "InstanceType": "t2.micro",
+        "KeyName": "ec2-dynamodb-key",
+        "SecurityGroups": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/usr/bin/env bash \n",
+                "sudo yum -y install java-1.8.0 \n",
+                "aws s3 cp s3://user-apps/",
+                {
+                  "Ref": "SpringBootAppName"
+                },
+                " /home/ec2-user/aws-spring-boot.jar \n",
+                "cd /home/ec2-user/ \n",
+                "sudo nohup java",
+                " -Daws.access.key=",
+                {
+                  "Ref": "AccessKey"
+                },
+                " -Daws.access.secret-key=",
+                {
+                  "Ref": "SecretKey"
+                },
+                " -Daws.region=",
+                {
+                  "Ref": "Region"
+                },
+                " -Daws.dynamodb.endpoint-url=",
+                {
+                  "Ref": "DynamoDbEndpoint"
+                },
+                " -Daws.sqs.endpoint-url=",
+                {
+                  "Ref": "SqsEndpoint"
+                },
+                " -Daws.sqs.book.endpoint-url=",
+                {
+                  "Ref": "SqsBookEndpoint"
+                },
+                " -Daws.sqs.book.group-id=",
+                {
+                  "Ref": "SqsBookGroup"
+                },
+                " -jar aws-spring-boot.jar > log.txt"
+              ]
+            ]
+          }
+        }
+      },
+      "DependsOn": [
+        "DynamoDBBookTable",
+        "SqsBook"
+      ]
+    },
+    "SqsBook": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "book-sqs.fifo",
+        "FifoQueue": true,
+        "ContentBasedDeduplication": true
+      }
+    },
+    "DynamoDBBookTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "isbn",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "isbn",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": "5",
+          "WriteCapacityUnits": "5"
+        },
+        "TableName": "book"
+      }
+    },
+    "S3BookBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "sqs-book-bucket"
+      }
+    },
+    "LambdaBookFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "user-apps",
+          "S3Key": {
+            "Ref": "LambdaHandlerAppName"
+          }
+        },
+        "FunctionName": "sqs-to-s3-function",
+        "Handler": "com.armen.handler.SQSHandler::handleRequest",
+        "MemorySize": 256,
+        "Role": "arn:aws:iam::256935796161:role/SQSToS3LambdaRole",
+        "Runtime": "java8",
+        "Timeout": 15,
+        "Environment": {
+          "Variables": {
+            "bucket": "sqs-book-bucket"
+          }
+        }
+      },
+      "DependsOn": [
+        "SqsBook",
+        "S3BookBucket"
+      ]
+    },
+    "LambdaBookEventTrigger": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "Enabled": true,
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "SqsBook",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "LambdaBookFunction",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "LambdaBookFunction"
+      ]
+    }
+  }
+}
