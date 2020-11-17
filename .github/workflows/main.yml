@@ -3,7 +3,7 @@ env:
   AWS_REGION_NAME             : "us-east-2"
   AWS_S3_BUCKET               : "user-apps"
   SPRING_BOOT_JAR_PATH        : "awsspringboot/target/*.jar"
-  LAMBDA_HANDLER_JAR_PATH     : "awslambda/target/*.jar"
+  LAMBDA_HANDLER_JAR_PATH     : "awslambda/target/awslambda-*.jar"
   NEW_SPRING_BOOT_APP_NAME    : "aws-spring-boot-${GITHUB_SHA::8}.jar"
   NEW_LAMBDA_HANDLER_APP_NAME : "aws-lambda-${GITHUB_SHA::8}.jar"
   DYNAMO_DB_ENDPOINT          : "dynamodb.us-east-2.amazonaws.com"
