@@ -25,7 +25,9 @@ public class SQSHandler implements RequestHandler<SQSEvent, String> {
         context.getLogger().log(record.getBody());
 
         if (Objects.nonNull(isbn)) {
+          context.getLogger().log("Saving object to S3...");
           s3Client.putObject(bucketName, isbn, record.getBody());
+          context.getLogger().log("Completed object saving");
         }
       }
     } catch (Exception e) {
