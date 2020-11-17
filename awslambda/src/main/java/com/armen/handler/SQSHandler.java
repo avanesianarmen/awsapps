@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
+import java.util.Map;
 import java.util.Objects;
 
 public class SQSHandler implements RequestHandler<SQSEvent, String> {
@@ -20,13 +21,14 @@ public class SQSHandler implements RequestHandler<SQSEvent, String> {
 
     try {
       for (SQSEvent.SQSMessage record : sqsEvent.getRecords()) {
-        String isbn = record.getAttributes().get("isbn");
+        Map<String, SQSEvent.MessageAttribute> messageAttributes = record.getMessageAttributes();
+        SQSEvent.MessageAttribute isbn = messageAttributes.get("isbn");
 
         context.getLogger().log(record.getBody());
 
         if (Objects.nonNull(isbn)) {
           context.getLogger().log("Saving object to S3...");
-          s3Client.putObject(bucketName, isbn, record.getBody());
+          s3Client.putObject(bucketName, isbn.getStringValue(), record.getBody());
           context.getLogger().log("Completed object saving");
         }
       }
