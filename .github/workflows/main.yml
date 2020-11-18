@@ -69,6 +69,6 @@ jobs:
           --stack-name AWSBookDemo \
           --parameter-overrides SpringBootAppName=${{ env.NEW_SPRING_BOOT_APP_NAME }},LambdaHandlerAppName=${{ env.NEW_LAMBDA_HANDLER_APP_NAME }},AccessKey=${{ secrets.AWS_ACCESS_KEY }},SecretKey=${{ secrets.AWS_SECRET_KEY }},Region=${{ env.AWS_REGION_NAME }},DynamoDbEndpoint=${{ env.DYNAMO_DB_ENDPOINT }},SqsEndpoint=${{ env.SQS_ENDPOINT }},SqsBookEndpoint=${{ env.SQS_BOOK_ENDPOINT }},SqsBookGroup=${{ env.SQS_BOOK_GROUP }} \
           --s3-bucket ${{ env.AWS_S3_BUCKET }}
-          --template-file ${{ env.CLOUDFORMATION_TEMPLATE } \
+          --template-file ${{ env.CLOUDFORMATION_TEMPLATE }} \
           --capabilities CAPABILITY_IAM \
           --no-fail-on-empty-changeset
