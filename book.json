@@ -87,7 +87,7 @@
                 "#!/usr/bin/env bash \n",
                 "sudo yum -y install java-1.8.0 \n",
                 "rm /aws*.jar \n",
-                "rm /log.txt \n"
+                "rm /log.txt \n",
                 "aws s3 cp s3://user-apps/",
                 {
                   "Ref": "SpringBootAppName"
