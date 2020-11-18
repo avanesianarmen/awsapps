@@ -10,6 +10,7 @@ env:
   SQS_ENDPOINT                : "sqs.us-east-2.amazonaws.com"
   SQS_BOOK_ENDPOINT           : "256935796161/book-sqs.fifo"
   SQS_BOOK_GROUP              : "book-sqs"
+  CLOUDFORMATION_TEMPLATE     : "book.template"
 
 
 on:
@@ -45,6 +46,11 @@ jobs:
 
       - name: Copy Lambda Handler jar to S3
         run:  aws s3 cp ${{ env.LAMBDA_HANDLER_JAR_PATH }} s3://${{ env.AWS_S3_BUCKET }}/${{ env.NEW_LAMBDA_HANDLER_APP_NAME }}
+        
+      - name: Copy Cloudformation template to S3
+        run: |
+          aws s3 rm s3://${{ env.AWS_S3_BUCKET }}${{ env.CLOUDFORMATION_TEMPLATE }} \
+          && aws s3 cp ./book.json s3://${{ env.AWS_S3_BUCKET }}${{ env.CLOUDFORMATION_TEMPLATE }  
   cd:
     runs-on: ubuntu-latest
     needs: [ci]
@@ -62,6 +68,7 @@ jobs:
           aws cloudformation deploy \
           --stack-name AWSBookDemo \
           --parameter-overrides SpringBootAppName=${{ env.NEW_SPRING_BOOT_APP_NAME }},LambdaHandlerAppName=${{ env.NEW_LAMBDA_HANDLER_APP_NAME }},AccessKey=${{ secrets.AWS_ACCESS_KEY }},SecretKey=${{ secrets.AWS_SECRET_KEY }},Region=${{ env.AWS_REGION_NAME }},DynamoDbEndpoint=${{ env.DYNAMO_DB_ENDPOINT }},SqsEndpoint=${{ env.SQS_ENDPOINT }},SqsBookEndpoint=${{ env.SQS_BOOK_ENDPOINT }},SqsBookGroup=${{ env.SQS_BOOK_GROUP }} \
-          --template-file book.json \
+          --s3-bucket ${{ env.AWS_S3_BUCKET }}
+          --template-file ${{ env.CLOUDFORMATION_TEMPLATE } \
           --capabilities CAPABILITY_IAM \
           --no-fail-on-empty-changeset
