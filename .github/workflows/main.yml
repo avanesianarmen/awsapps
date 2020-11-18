@@ -46,6 +46,9 @@ jobs:
 
       - name: Copy Lambda Handler jar to S3
         run:  aws s3 cp ${{ env.LAMBDA_HANDLER_JAR_PATH }} s3://${{ env.AWS_S3_BUCKET }}/${{ env.NEW_LAMBDA_HANDLER_APP_NAME }}
+      
+      - name: Ls files
+        run: ls 
         
       - name: Copy Cloudformation template to S3
         run: |
