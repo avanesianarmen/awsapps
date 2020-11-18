@@ -59,8 +59,9 @@ jobs:
 
       - name: Create Cloudformation stack
         run : |
-          aws cloudformation create-stack \
+          aws cloudformation deploy \
           --stack-name AWSBookDemo \
-          --parameters ParameterKey=SpringBootAppName,ParameterValue=${{ env.NEW_SPRING_BOOT_APP_NAME }} ParameterKey=LambdaHandlerAppName,ParameterValue=${{ env.NEW_LAMBDA_HANDLER_APP_NAME }} ParameterKey=AccessKey,ParameterValue=${{ secrets.AWS_ACCESS_KEY }} ParameterKey=SecretKey,ParameterValue=${{ secrets.AWS_SECRET_KEY }} ParameterKey=Region,ParameterValue=${{ env.AWS_REGION_NAME }} ParameterKey=DynamoDbEndpoint,ParameterValue=${{ env.DYNAMO_DB_ENDPOINT }} ParameterKey=SqsEndpoint,ParameterValue=${{ env.SQS_ENDPOINT }} ParameterKey=SqsBookEndpoint,ParameterValue=${{ env.SQS_BOOK_ENDPOINT }} ParameterKey=SqsBookGroup,ParameterValue=${{ env.SQS_BOOK_GROUP }} \
+          --parameter-overrides SpringBootAppName=${{ env.NEW_SPRING_BOOT_APP_NAME }} LambdaHandlerAppName=${{ env.NEW_LAMBDA_HANDLER_APP_NAME }} AccessKey=${{ secrets.AWS_ACCESS_KEY }} SecretKey=${{ secrets.AWS_SECRET_KEY }} Region=${{ env.AWS_REGION_NAME }} DynamoDbEndpoint=${{ env.DYNAMO_DB_ENDPOINT }} SqsEndpoint=${{ env.SQS_ENDPOINT }} SqsBookEndpoint=${{ env.SQS_BOOK_ENDPOINT }} SqsBookGroup=${{ env.SQS_BOOK_GROUP }} \
           --template-url https://s3.amazonaws.com/user-apps/book.template \
-          --capabilities CAPABILITY_IAM
+          --capabilities CAPABILITY_IAM \
+          --no-fail-on-empty-changeset
