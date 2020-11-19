@@ -59,7 +59,7 @@ public class SqsBookRepository {
         .withDataType("String"));
     SendMessageRequest sqsRequest = new SendMessageRequest()
         .withQueueUrl(sqsBookUrl)
-        .withMessageBody(null)
+        .withMessageBody("")
         .withMessageGroupId(sqsBookGroupId)
         .withMessageAttributes(messageAttributes);
     sqsClient.sendMessage(sqsRequest);
