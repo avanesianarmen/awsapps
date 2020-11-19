@@ -55,7 +55,7 @@ public class SqsBookRepository {
         .withStringValue(isbn)
         .withDataType("String"));
     messageAttributes.put("s3Event", new MessageAttributeValue()
-        .withStringValue(S3Event.UPSERT.name())
+        .withStringValue(S3Event.DELETE.name())
         .withDataType("String"));
     SendMessageRequest sqsRequest = new SendMessageRequest()
         .withQueueUrl(sqsBookUrl)
