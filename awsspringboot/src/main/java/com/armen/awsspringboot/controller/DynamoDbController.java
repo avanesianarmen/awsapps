@@ -21,12 +21,12 @@ public class DynamoDbController {
 
   @PostMapping
   public void insertBook(@RequestBody Book book) {
-    bookService.insertBook(book);
+    bookService.upsertBook(book);
   }
 
   @PutMapping
   public void updateBook(@RequestBody Book book) {
-    bookService.updateBook(book);
+    bookService.upsertBook(book);
   }
 
   @DeleteMapping

@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.armen.awsspringboot.model.Book;
+import com.armen.awsspringboot.model.S3Event;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,21 +29,38 @@ public class SqsBookRepository {
     this.objectMapper = objectMapper;
   }
 
-  public void sendMessage(Book book) {
+  public void sendUsertEvent(Book book) {
     Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
     messageAttributes.put("isbn", new MessageAttributeValue()
         .withStringValue(book.getIsbn())
         .withDataType("String"));
-    SendMessageRequest sqsRequest = null;
+    messageAttributes.put("s3Event", new MessageAttributeValue()
+        .withStringValue(S3Event.UPSERT.name())
+        .withDataType("String"));
     try {
-      sqsRequest = new SendMessageRequest()
+      SendMessageRequest sqsRequest = new SendMessageRequest()
           .withQueueUrl(sqsBookUrl)
           .withMessageBody(objectMapper.writeValueAsString(book))
           .withMessageGroupId(sqsBookGroupId)
           .withMessageAttributes(messageAttributes);
+      sqsClient.sendMessage(sqsRequest);
     } catch (JsonProcessingException e) {
       e.printStackTrace();
     }
+  }
+
+  public void sendDeleteEvent(String isbn) {
+    Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+    messageAttributes.put("isbn", new MessageAttributeValue()
+        .withStringValue(isbn)
+        .withDataType("String"));
+    messageAttributes.put("s3Event", new MessageAttributeValue()
+        .withStringValue(S3Event.UPSERT.name())
+        .withDataType("String"));
+    SendMessageRequest sqsRequest = new SendMessageRequest()
+        .withQueueUrl(sqsBookUrl)
+        .withMessageGroupId(sqsBookGroupId)
+        .withMessageAttributes(messageAttributes);
     sqsClient.sendMessage(sqsRequest);
   }
 }

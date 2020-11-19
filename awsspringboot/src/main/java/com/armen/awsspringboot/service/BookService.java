@@ -1,6 +1,7 @@
 package com.armen.awsspringboot.service;
 
 import com.armen.awsspringboot.model.Book;
+import com.armen.awsspringboot.model.S3Event;
 import com.armen.awsspringboot.repository.DynamoDbBookRepository;
 import com.armen.awsspringboot.repository.SqsBookRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,16 +24,13 @@ public class BookService {
     return dbRepository.read(isbn);
   }
 
-  public void insertBook(Book book) {
+  public void upsertBook(Book book) {
     dbRepository.create(book);
-    sqsRepository.sendMessage(book);
-  }
-
-  public void updateBook(Book book) {
-    dbRepository.create(book);
+    sqsRepository.sendUsertEvent(book);
   }
 
   public void deleteBook(String isbn) {
     dbRepository.delete(isbn);
+    sqsRepository.sendDeleteEvent(isbn);
   }
 }
