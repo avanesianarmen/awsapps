@@ -11,7 +11,7 @@ public class HealthCheckController {
 
   @GetMapping("/{name}")
   public String greeting(@PathVariable String name) {
-    return String.format("<b><h1>Hello, %s </h1></b> <p><i>Have a nice day ;)</i><p/>", name);
+    return String.format("<b><h1>Hello, %s </h1></b> <p><i>Good luck, have a nice day ;)</i><p/>", name);
   }
 
 }
